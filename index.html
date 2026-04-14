@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Breathe"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>Breathe</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:1rem}
+h1{text-align:center;font-size:1.4rem;font-weight:500;margin-bottom:1.5rem;color:#cdd9e5;letter-spacing:.05em}
+.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{padding:6px 18px;border-radius:20px;border:1px solid #30363d;background:transparent;color:#8b949e;cursor:pointer;font-size:13px;transition:.2s}
+.tab.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.section{display:none}.section.active{display:block}
+.orb-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem 0 2rem}
+.orb-outer{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+.orb{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#58a6ff,#1f6feb,#0a3068);display:flex;align-items:center;justify-content:center;flex-direction:column;transition:transform .08s linear,background .3s}
+.orb-ring{position:absolute;border-radius:50%;border:2px solid #1f6feb33}
+.phase-label{font-size:1.1rem;font-weight:500;color:#cdd9e5;margin-top:1rem;letter-spacing:.08em;min-height:1.5rem;text-align:center}
+.timer-display{font-size:2.5rem;font-weight:300;color:#58a6ff;text-align:center;min-height:3rem;font-variant-numeric:tabular-nums}
+.cycle-info{font-size:13px;color:#8b949e;text-align:center;margin-top:.5rem}
+.controls{display:flex;gap:10px;justify-content:center;margin-top:1.2rem;flex-wrap:wrap}
+button.btn{padding:8px 22px;border-radius:20px;border:1px solid #30363d;background:transparent;color:#cdd9e5;cursor:pointer;font-size:13px;transition:.2s}
+button.btn:hover{background:#21262d}
+button.btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+button.btn.primary:hover{background:#388bfd}
+button.btn.danger{border-color:#f85149;color:#f85149}
+button.btn.sm{padding:5px 12px;font-size:12px}
+.settings-grid{display:grid;gap:1rem;max-width:480px;margin:0 auto}
+.setting-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1rem}
+.setting-card h3{font-size:.85rem;color:#8b949e;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:.5rem}
+.row label{font-size:13px;color:#cdd9e5;min-width:80px}
+.row input[type=range]{flex:1;accent-color:#1f6feb}
+.row .val{font-size:13px;color:#58a6ff;min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.row select{flex:1;background:#0d1117;border:1px solid #30363d;color:#cdd9e5;padding:4px 8px;border-radius:6px;font-size:12px}
+.cycles-row{display:flex;align-items:center;gap:10px;margin-top:.5rem}
+.cycles-row label{font-size:13px;color:#cdd9e5}
+.cycles-row input[type=number]{width:60px;background:#0d1117;border:1px solid #30363d;color:#cdd9e5;padding:4px 8px;border-radius:6px;text-align:center}
+.tpl-list{max-width:480px;margin:0 auto;display:grid;gap:.75rem}
+.tpl-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;gap:10px}
+.tpl-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44;white-space:nowrap}
+.tpl-badge.preset{background:#2ea04322;color:#3fb950;border-color:#2ea04344}
+.tpl-name{flex:1;font-size:14px;color:#cdd9e5}
+.tpl-meta{font-size:11px;color:#8b949e;margin-top:2px}
+.tpl-actions{display:flex;gap:6px}
+.save-row{max-width:480px;margin:0 auto 1rem;display:flex;gap:8px}
+.save-row input{flex:1;background:#161b22;border:1px solid #30363d;color:#cdd9e5;padding:8px 12px;border-radius:8px;font-size:13px}
+.import-area{max-width:480px;margin:1rem auto 0;display:flex;gap:8px;flex-wrap:wrap}
+.empty{text-align:center;color:#8b949e;font-size:13px;padding:2rem}
+.sound-note{font-size:11px;color:#8b949e;margin-top:.5rem;padding:.5rem;background:#0d1117;border-radius:6px;border-left:2px solid #1f6feb}
+</style>
+</head>
+<body>
+<h1>breathe</h1>
+<div class="tabs">
+  <button class="tab active" onclick="showTab('timer')">Timer</button>
+  <button class="tab" onclick="showTab('settings')">Settings</button>
+  <button class="tab" onclick="showTab('templates')">Templates</button>
+</div>
+
+<div id="timer" class="section active">
+  <div class="orb-wrap">
+    <div class="orb-outer">
+      <div class="orb-ring" id="ring1" style="width:155px;height:155px"></div>
+      <div class="orb-ring" id="ring2" style="width:178px;height:178px;border-color:#1f6feb1a"></div>
+      <div class="orb" id="orb"></div>
+    </div>
+    <div class="phase-label" id="phaseLabel">Ready</div>
+    <div class="timer-display" id="timerDisp">—</div>
+    <div class="cycle-info" id="cycleInfo">Press Start</div>
+  </div>
+  <div class="controls">
+    <button class="btn primary" id="startBtn" onclick="toggleStart()">Start</button>
+    <button class="btn" onclick="resetTimer()">Reset</button>
+  </div>
+</div>
+
+<div id="settings" class="section">
+  <div class="settings-grid">
+    <div class="setting-card">
+      <h3>Phase timings (seconds)</h3>
+      <div class="row"><label>Inhale</label><input type="range" min="1" max="20" value="4" id="sIn" oninput="updateVal('sIn','vIn')"/><span class="val" id="vIn">4s</span></div>
+      <div class="row"><label>Hold</label><input type="range" min="0" max="30" value="7" id="sHold" oninput="updateVal('sHold','vHold')"/><span class="val" id="vHold">7s</span></div>
+      <div class="row"><label>Exhale</label><input type="range" min="1" max="30" value="8" id="sEx" oninput="updateVal('sEx','vEx')"/><span class="val" id="vEx">8s</span></div>
+      <div class="row"><label>Relax</label><input type="range" min="0" max="20" value="0" id="sRelax" oninput="updateVal('sRelax','vRelax')"/><span class="val" id="vRelax">0s</span></div>
+      <div class="cycles-row"><label>Cycles</label><input type="number" id="sCycles" min="1" max="20" value="4"/><span style="font-size:12px;color:#8b949e">repetitions</span></div>
+    </div>
+    <div class="setting-card">
+      <h3>Sounds per phase</h3>
+      <div class="row"><label>Inhale</label><select id="snIn"><option value="tone_rise">Rising tone</option><option value="white">White noise</option><option value="chime">Chime</option><option value="none">Silence</option></select></div>
+      <div class="row"><label>Hold</label><select id="snHold"><option value="none" selected>Silence</option><option value="bowl">Singing bowl</option><option value="tone_hold">Steady tone</option><option value="white">White noise</option></select></div>
+      <div class="row"><label>Exhale</label><select id="snEx"><option value="tone_fall">Falling tone</option><option value="white">White noise</option><option value="bowl">Singing bowl</option><option value="none">Silence</option></select></div>
+      <div class="row"><label>Relax</label><select id="snRelax"><option value="none" selected>Silence</option><option value="bowl">Singing bowl</option><option value="white">White noise</option></select></div>
+      <div class="sound-note">Inhale &amp; exhale sounds play for the full phase duration so you can breathe eyes-closed.</div>
+    </div>
+  </div>
+</div>
+
+<div id="templates" class="section">
+  <div class="save-row">
+    <input type="text" id="tplName" placeholder="Name your current settings…"/>
+    <button class="btn primary" onclick="saveTemplate()">Save</button>
+  </div>
+  <div id="tplList" class="tpl-list"></div>
+  <div class="import-area">
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importTemplate(event)"/>
+    <button class="btn" onclick="document.getElementById('importFile').click()">Import JSON</button>
+    <button class="btn" onclick="exportAll()">Export All</button>
+  </div>
+</div>
+
+<script>
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+const PRESETS = [
+  {name:'4-7-8 (Dr. Weil)',inhale:4,hold:7,exhale:8,relax:0,cycles:4,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Box Breathing (Navy SEAL)',inhale:4,hold:4,exhale:4,relax:4,cycles:6,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Coherent / Resonant (5-5)',inhale:5,hold:0,exhale:5,relax:0,cycles:8,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Physiological Sigh (SOMA)',inhale:4,hold:2,exhale:8,relax:0,cycles:5,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Wim Hof Power Breath',inhale:2,hold:0,exhale:2,relax:0,cycles:30,sounds:{inhale:'white',hold:'none',exhale:'white',relax:'none'},preset:true},
+  {name:'Alternate Nostril (4-4-4-4)',inhale:4,hold:4,exhale:4,relax:4,cycles:5,sounds:{inhale:'tone_rise',hold:'bowl',exhale:'tone_fall',relax:'bowl'},preset:true},
+  {name:'2-1-4-1 Relaxation',inhale:2,hold:1,exhale:4,relax:1,cycles:6,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Tummo (4-0-8-0)',inhale:4,hold:0,exhale:8,relax:0,cycles:6,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Sitali Cooling Breath',inhale:6,hold:4,exhale:6,relax:2,cycles:5,sounds:{inhale:'white',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+  {name:'Equal Breathing (4-4)',inhale:4,hold:0,exhale:4,relax:0,cycles:8,sounds:{inhale:'tone_rise',hold:'none',exhale:'tone_fall',relax:'none'},preset:true},
+];
+
+let userTemplates = [];
+try{ userTemplates = JSON.parse(localStorage.getItem('breathe_user_tpl')||'[]'); }catch(e){}
+
+// Active sound nodes
+let activeSoundNodes = [];
+
+function stopAllSounds(){
+  activeSoundNodes.forEach(n=>{try{n.stop();}catch(e){}});
+  activeSoundNodes=[];
+}
+
+function playPhaseSound(type, duration){
+  if(!type||type==='none'||duration<=0)return;
+  if(ctx.state==='suspended')ctx.resume();
+  const t=ctx.currentTime;
+  const dur=duration;
+  const g=ctx.createGain();
+  g.connect(ctx.destination);
+  // fade in/out .15s
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(.3,t+.15);
+  g.gain.setValueAtTime(.3,t+Math.max(dur-.2,.15));
+  g.gain.linearRampToValueAtTime(0,t+dur);
+
+  if(type==='tone_rise'){
+    const o=ctx.createOscillator();o.type='sine';
+    o.frequency.setValueAtTime(180,t);
+    o.frequency.linearRampToValueAtTime(320,t+dur);
+    o.connect(g);o.start(t);o.stop(t+dur);
+    activeSoundNodes.push(o);
+  } else if(type==='tone_fall'){
+    const o=ctx.createOscillator();o.type='sine';
+    o.frequency.setValueAtTime(320,t);
+    o.frequency.linearRampToValueAtTime(130,t+dur);
+    o.connect(g);o.start(t);o.stop(t+dur);
+    activeSoundNodes.push(o);
+  } else if(type==='tone_hold'){
+    const o=ctx.createOscillator();o.type='sine';
+    o.frequency.setValueAtTime(220,t);
+    o.connect(g);o.start(t);o.stop(t+dur);
+    activeSoundNodes.push(o);
+  } else if(type==='bowl'){
+    // layered partials for singing bowl
+    [220,440,660].forEach((f,i)=>{
+      const o=ctx.createOscillator(),gb=ctx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(f,t);
+      gb.gain.setValueAtTime(i===0?.18:.08,t);
+      gb.gain.exponentialRampToValueAtTime(.001,t+Math.min(dur,3));
+      o.connect(gb);gb.connect(ctx.destination);
+      o.start(t);o.stop(t+Math.min(dur,3)+.1);
+      activeSoundNodes.push(o);
+    });
+    return;
+  } else if(type==='white'){
+    const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*.12;
+    const src=ctx.createBufferSource();src.buffer=buf;
+    src.connect(g);src.start(t);
+    activeSoundNodes.push(src);
+  } else if(type==='chime'){
+    const o=ctx.createOscillator();o.type='sine';o.frequency.setValueAtTime(528,t);
+    o.connect(g);o.start(t);o.stop(t+Math.min(dur,1.5));
+    activeSoundNodes.push(o);
+  }
+}
+
+const PHASES=['inhale','hold','exhale','relax'];
+const LABELS={inhale:'Inhale',hold:'Hold',exhale:'Exhale',relax:'Relax'};
+const COLORS={inhale:'#1f6feb',hold:'#2ea043',exhale:'#6e40c9',relax:'#0e7490'};
+
+let running=false,animId=null,phaseIdx=0,cycleCount=0,phaseStart=0,lastPhase=-1;
+
+function getSettings(){
+  return{
+    inhale:+document.getElementById('sIn').value,
+    hold:+document.getElementById('sHold').value,
+    exhale:+document.getElementById('sEx').value,
+    relax:+document.getElementById('sRelax').value,
+    cycles:+document.getElementById('sCycles').value,
+    sounds:{
+      inhale:document.getElementById('snIn').value,
+      hold:document.getElementById('snHold').value,
+      exhale:document.getElementById('snEx').value,
+      relax:document.getElementById('snRelax').value
+    }
+  };
+}
+
+function toggleStart(){
+  if(ctx.state==='suspended')ctx.resume();
+  running=!running;
+  document.getElementById('startBtn').textContent=running?'Pause':'Start';
+  if(running){phaseStart=performance.now();if(!animId)loop();}
+  else{cancelAnimationFrame(animId);animId=null;stopAllSounds();}
+}
+
+function resetTimer(){
+  running=false;cancelAnimationFrame(animId);animId=null;stopAllSounds();
+  phaseIdx=0;cycleCount=0;lastPhase=-1;
+  document.getElementById('startBtn').textContent='Start';
+  document.getElementById('phaseLabel').textContent='Ready';
+  document.getElementById('timerDisp').textContent='—';
+  document.getElementById('cycleInfo').textContent='Press Start';
+  setOrb(COLORS.inhale,1);
+}
+
+function loop(){
+  const s=getSettings();
+  const phases=PHASES.filter(p=>p==='inhale'||p==='exhale'||s[p]>0);
+  const now=performance.now();
+  const elapsed=(now-phaseStart)/1000;
+  const ph=phases[phaseIdx];
+  const dur=s[ph]||0;
+
+  if(phaseIdx!==lastPhase){
+    lastPhase=phaseIdx;
+    stopAllSounds();
+    playPhaseSound(s.sounds[ph],dur);
+    document.getElementById('phaseLabel').textContent=LABELS[ph];
+    document.getElementById('cycleInfo').textContent=`Cycle ${cycleCount+1} of ${s.cycles}`;
+  }
+
+  const rem=Math.max(0,dur-elapsed);
+  document.getElementById('timerDisp').textContent=rem.toFixed(1);
+
+  const progress=Math.min(elapsed/Math.max(dur,.001),1);
+  let scale=1;
+  if(ph==='inhale')scale=1+.35*progress;
+  else if(ph==='hold')scale=1.35;
+  else if(ph==='exhale')scale=1.35-.55*progress;
+  else scale=.8;
+  setOrb(COLORS[ph],scale);
+
+  if(elapsed>=dur){
+    phaseStart=now;
+    phaseIdx=(phaseIdx+1)%phases.length;
+    if(phaseIdx===0){cycleCount++;if(cycleCount>=s.cycles){done();return;}}
+  }
+  animId=requestAnimationFrame(loop);
+}
+
+function done(){
+  running=false;animId=null;stopAllSounds();
+  document.getElementById('phaseLabel').textContent='Done';
+  document.getElementById('timerDisp').textContent='✓';
+  document.getElementById('cycleInfo').textContent='Session complete';
+  document.getElementById('startBtn').textContent='Start';
+  phaseIdx=0;cycleCount=0;lastPhase=-1;
+  setTimeout(()=>playPhaseSound('bowl',2),100);
+}
+
+function setOrb(color,scale){
+  const orb=document.getElementById('orb');
+  orb.style.background=`radial-gradient(circle at 35% 35%,#8bb8ff,${color},${color}88)`;
+  orb.style.transform=`scale(${scale})`;
+  document.getElementById('ring1').style.borderColor=color+'66';
+  document.getElementById('ring2').style.borderColor=color+'22';
+}
+
+function updateVal(id,vid){document.getElementById(vid).textContent=document.getElementById(id).value+'s';}
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('active',['timer','settings','templates'][i]===t);});
+  document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+  document.getElementById(t).classList.add('active');
+}
+
+function applyTemplate(t){
+  document.getElementById('sIn').value=t.inhale;document.getElementById('vIn').textContent=t.inhale+'s';
+  document.getElementById('sHold').value=t.hold;document.getElementById('vHold').textContent=t.hold+'s';
+  document.getElementById('sEx').value=t.exhale;document.getElementById('vEx').textContent=t.exhale+'s';
+  document.getElementById('sRelax').value=t.relax;document.getElementById('vRelax').textContent=t.relax+'s';
+  document.getElementById('sCycles').value=t.cycles||4;
+  if(t.sounds){
+    document.getElementById('snIn').value=t.sounds.inhale||'tone_rise';
+    document.getElementById('snHold').value=t.sounds.hold||'none';
+    document.getElementById('snEx').value=t.sounds.exhale||'tone_fall';
+    document.getElementById('snRelax').value=t.sounds.relax||'none';
+  }
+  resetTimer();showTab('timer');
+}
+
+function saveTemplate(){
+  const name=document.getElementById('tplName').value.trim();
+  if(!name)return alert('Enter a template name');
+  const s=getSettings();
+  userTemplates.push({name,created:new Date().toISOString().slice(0,10),...s,preset:false});
+  try{localStorage.setItem('breathe_user_tpl',JSON.stringify(userTemplates));}catch(e){}
+  renderTemplates();document.getElementById('tplName').value='';
+}
+
+function deleteUserTemplate(i){userTemplates.splice(i,1);try{localStorage.setItem('breathe_user_tpl',JSON.stringify(userTemplates));}catch(e){}renderTemplates();}
+
+function renderTemplates(){
+  const el=document.getElementById('tplList');
+  const all=[...PRESETS,...userTemplates];
+  if(!all.length){el.innerHTML='<div class="empty">No templates</div>';return;}
+  el.innerHTML=all.map((t,i)=>{
+    const isUser=i>=PRESETS.length;
+    const uIdx=i-PRESETS.length;
+    return`<div class="tpl-card">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="tpl-name">${t.name}</span>
+          <span class="tpl-badge ${t.preset?'preset':''}">${t.preset?'preset':'custom'}</span>
+        </div>
+        <div class="tpl-meta">${t.inhale}-${t.hold}-${t.exhale}-${t.relax}s &middot; ${t.cycles||4} cycles${t.created?' &middot; '+t.created:''}</div>
+      </div>
+      <div class="tpl-actions">
+        <button class="btn sm" onclick="applyTemplate(${JSON.stringify(t).replace(/"/g,'&quot;')})">Load</button>
+        ${isUser?`<button class="btn sm danger" onclick="deleteUserTemplate(${uIdx})">Del</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportAll(){
+  const all=[...PRESETS,...userTemplates];
+  const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='breathe-templates.json';a.click();
+}
+
+function importTemplate(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      const arr=Array.isArray(data)?data:[data];
+      let count=0;
+      arr.forEach(t=>{if(t.name&&t.inhale!=null&&!t.preset){userTemplates.push({...t,preset:false});count++;}});
+      try{localStorage.setItem('breathe_user_tpl',JSON.stringify(userTemplates));}catch(e){}
+      renderTemplates();alert(`Imported ${count} custom template(s)`);
+    }catch{alert('Invalid JSON file');}
+  };
+  r.readAsText(f);
+}
+
+renderTemplates();setOrb(COLORS.inhale,1);
+</script>
+</body>
+</html>
